@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace app\database\activerecord;
 
@@ -8,7 +8,7 @@ use app\database\connection\Connection;
 use app\database\activerecord\interfaces\IActiveRecord;
 use app\database\activerecord\interfaces\IActiveRecordExecute;
 
-class Update implements IActiveRecordExecute
+class Delete implements IActiveRecordExecute
 {
   public function __construct(private string $field, private string|int $value)
   {
@@ -29,25 +29,19 @@ class Update implements IActiveRecordExecute
       $prepare->execute($attributes);
 
       return $prepare->rowCount();
-    } catch(Throwable $th) {
+    } catch (Throwable $th) {
       formatException($th);
     }
   }
 
   private function createQuery(IActiveRecord $activeRecordInterface)
   {
-    if (array_key_exists('id', $activeRecordInterface->getAttributes())) {
-      throw new Exception("O campo id não pode ser passado para o Update");
+    if ($activeRecordInterface->getAttributes()) {
+      throw new Exception('Para deletar não precisa passar atributos.');
     }
 
-    $sql = "UPDATE {$activeRecordInterface->getTable()} SET ";
-
-    foreach ($activeRecordInterface->getAttributes() as $key => $value) {
-      $sql .= "{$key} = :{$key}, ";
-    }
-
-    $sql = rtrim($sql, ', ');
-    $sql .= " WHERE {$this->field} = :{$this->field}";
+    $sql = "DELETE FROM {$activeRecordInterface->getTable()} WHERE ";
+    $sql .= "{$this->field} = :{$this->field}";
 
     return $sql;
   }

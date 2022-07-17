@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace app\database\activerecord;
 
@@ -7,17 +7,29 @@ use app\database\connection\Connection;
 use app\database\activerecord\interfaces\IActiveRecord;
 use app\database\activerecord\interfaces\IActiveRecordExecute;
 
-class Insert implements IActiveRecordExecute
+class FindBy implements IActiveRecordExecute
 {
+  public function __construct(
+    private string $field, 
+    private string|int $value, 
+    private string $columns = '*'
+  )
+  {
+  }
+
   public function execute(IActiveRecord $activeRecordInterface)
   {
     try {
       $query = $this->createQuery($activeRecordInterface);
 
       $connection = Connection::connect();
-
+      
       $prepare = $connection->prepare($query);
-      return $prepare->execute($activeRecordInterface->getAttributes());
+      $prepare->execute([
+        $this->field => $this->value
+      ]);
+
+      return $prepare->fetch();
     } catch (Throwable $th) {
       formatException($th);
     }
@@ -25,9 +37,8 @@ class Insert implements IActiveRecordExecute
 
   private function createQuery(IActiveRecord $activeRecordInterface)
   {
-    $sql = "INSERT INTO {$activeRecordInterface->getTable()} (";
-    $sql .= implode(', ', array_keys($activeRecordInterface->getAttributes())) . ') VALUES (';
-    $sql .= ':' . implode(', :', array_keys($activeRecordInterface->getAttributes())) . ')';
+    $sql = "SELECT {$this->columns} FROM {$activeRecordInterface->getTable()} WHERE ";
+    $sql .= "{$this->field} = :{$this->field}";
 
     return $sql;
   }
